@@ -1,6 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
 import { AppError } from "../utils/app-error";
+import { env } from "../config/env";
+import { logger } from "../utils/logger";
 
 export function notFoundHandler(_req: Request, res: Response): void {
   res.status(404).json({
@@ -11,10 +13,17 @@ export function notFoundHandler(_req: Request, res: Response): void {
 
 export function errorHandler(
   err: unknown,
-  _req: Request,
+  req: Request,
   res: Response,
   _next: NextFunction
 ): void {
+  logger.error("request.failed", {
+    requestId: req.requestId,
+    path: req.originalUrl,
+    method: req.method,
+    error: err instanceof Error ? err.message : "Unknown error",
+  });
+
   if (err instanceof ZodError) {
     const firstIssue = err.issues[0];
     res.status(400).json({
@@ -35,7 +44,7 @@ export function errorHandler(
   if (err instanceof Error) {
     res.status(500).json({
       success: false,
-      error: err.message || "Internal server error",
+      error: env.NODE_ENV === "production" ? "Internal server error" : err.message,
     });
     return;
   }

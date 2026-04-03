@@ -2,10 +2,12 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
+import { testDatabaseConnection } from "./config/database";
 import { env } from "./config/env";
 import { setupSwagger } from "./config/swagger";
 import { apiRateLimiter } from "./middlewares/rate-limit.middleware";
 import { errorHandler, notFoundHandler } from "./middlewares/error.middleware";
+import { requestLogger } from "./middlewares/request-logger.middleware";
 import authRouter from "./routes/auth.routes";
 import dashboardRouter from "./routes/dashboard.routes";
 import userRouter from "./routes/user.routes";
@@ -20,6 +22,7 @@ app.use(
     credentials: true,
   })
 );
+app.use(requestLogger);
 app.use(apiRateLimiter);
 app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
@@ -28,6 +31,15 @@ setupSwagger(app);
 
 app.get("/health", (_req, res) => {
   res.status(200).json({ success: true, message: "OK" });
+});
+
+app.get("/ready", async (_req, res) => {
+  try {
+    await testDatabaseConnection();
+    res.status(200).json({ success: true, message: "READY" });
+  } catch {
+    res.status(503).json({ success: false, error: "Database not ready" });
+  }
 });
 
 app.use("/api/auth", authRouter);

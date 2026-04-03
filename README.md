@@ -36,6 +36,10 @@ Production-ready full-stack SaaS analytics dashboard with multi-tenant auth, rol
 - Swagger docs: /api/docs
 - Security/performance: helmet, cors, rate limiting, mysql2 pool
 - Auth model: access token (15m) + refresh token (7d, httpOnly cookie)
+- Runtime checks:
+  - Health: GET /health
+  - Readiness (DB): GET /ready
+- Logging: structured JSON request and error logs with request IDs
 
 ## Frontend Highlights
 
@@ -75,6 +79,25 @@ Production-ready full-stack SaaS analytics dashboard with multi-tenant auth, rol
    - Frontend: http://localhost:5173
    - Backend: http://localhost:4000
    - Swagger: http://localhost:4000/api/docs
+  - Health: http://localhost:4000/health
+  - Readiness: http://localhost:4000/ready
+
+## Security Checklist
+
+- Keep JWT secrets long and unique per environment
+- Use secure cookie mode in production:
+  - COOKIE_SECURE=true
+- Restrict CORS origin to trusted frontend domains
+- Rotate refresh tokens and revoke on logout (implemented)
+- Never commit `.env` files with real secrets
+
+## Deployment Checklist
+
+- Run CI checks on every PR/push (lint, tests, builds)
+- Run DB schema migrations before starting new API versions
+- Seed only in non-production environments
+- Monitor `/health` and `/ready` in orchestration probes
+- Set `NODE_ENV=production` in production runtime
 
 ## Testing
 
