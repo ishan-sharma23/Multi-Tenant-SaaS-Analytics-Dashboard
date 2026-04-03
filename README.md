@@ -82,6 +82,38 @@ Production-ready full-stack SaaS analytics dashboard with multi-tenant auth, rol
   - Health: http://localhost:4000/health
   - Readiness: http://localhost:4000/ready
 
+  ## Quick Runbook
+
+  Use this when you want a fast, repeatable local check.
+
+  1. Start services:
+    - docker compose up --build -d
+  2. Verify containers:
+    - docker compose ps
+  3. Verify API:
+    - GET http://localhost:4000/health
+    - GET http://localhost:4000/ready
+  4. Open app:
+    - http://localhost:5173
+
+  ### Login Credentials
+
+  - Tenant slug: acme-growth
+  - Email: admin@acme-growth.com
+  - Password: password
+
+  ### Create New Account
+
+  - Go to /register and enter a new tenant slug (for example, my-new-tenant)
+  - First user for a new slug becomes tenant admin automatically
+
+  ### Troubleshooting
+
+  - If MySQL port 3306 is busy on your machine, this project maps host 3307 to container 3306
+  - If auth fails after changes, rebuild backend and frontend:
+    - docker compose up --build -d
+  - If browser shows stale UI state, hard refresh the page
+
 ## Security Checklist
 
 - Keep JWT secrets long and unique per environment
