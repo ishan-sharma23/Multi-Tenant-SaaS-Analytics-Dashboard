@@ -40,6 +40,20 @@ export async function findTenantBySlug(slug: string): Promise<TenantRow | null> 
   return rows[0] ?? null;
 }
 
+export async function createTenant(params: {
+  name: string;
+  slug: string;
+  plan?: "starter" | "pro" | "enterprise";
+}): Promise<number> {
+  const result = await query<ResultSetHeader>(
+    `INSERT INTO tenants (name, slug, plan, status)
+     VALUES (?, ?, ?, ?)`,
+    [params.name, params.slug, params.plan ?? "starter", "active"]
+  );
+
+  return result.insertId;
+}
+
 export async function getRoleIdByName(roleName: RoleName): Promise<number> {
   const rows = await queryRows<RoleRow>(
     `SELECT id, name

@@ -1,5 +1,6 @@
 import {
   assignRoleToUser,
+  createTenant,
   createUser,
   findTenantBySlug,
   findUserById,
@@ -25,6 +26,18 @@ import crypto from "crypto";
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
+}
+
+function normalizeTenantSlug(tenantSlug: string): string {
+  return tenantSlug.trim().toLowerCase();
+}
+
+function tenantNameFromSlug(tenantSlug: string): string {
+  return tenantSlug
+    .split("-")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 function sanitizeUser(user: {
@@ -78,15 +91,29 @@ async function issueTokens(user: {
 }
 
 export async function register(registerInput: RegisterInput): Promise<AuthResponse> {
-  const tenant = await findTenantBySlug(registerInput.tenantSlug);
+  const normalizedTenantSlug = normalizeTenantSlug(registerInput.tenantSlug);
+  const normalizedEmail = normalizeEmail(registerInput.email);
 
-  if (!tenant || tenant.status !== "active") {
+  const existingTenant = await findTenantBySlug(normalizedTenantSlug);
+  let tenantId: number;
+  let roleName: "admin" | "user" = "user";
+
+  if (!existingTenant) {
+    tenantId = await createTenant({
+      name: tenantNameFromSlug(normalizedTenantSlug),
+      slug: normalizedTenantSlug,
+      plan: "starter",
+    });
+    roleName = "admin";
+  } else if (existingTenant.status !== "active") {
     throw new AppError("Tenant not found or inactive", 404);
+  } else {
+    tenantId = existingTenant.id;
   }
 
   const existingUser = await findUserByTenantAndEmail({
-    tenantSlug: registerInput.tenantSlug,
-    email: normalizeEmail(registerInput.email),
+    tenantSlug: normalizedTenantSlug,
+    email: normalizedEmail,
   });
 
   if (existingUser) {
@@ -96,14 +123,14 @@ export async function register(registerInput: RegisterInput): Promise<AuthRespon
   const passwordHash = await hashPassword(registerInput.password);
 
   const userId = await createUser({
-    tenantId: tenant.id,
-    email: normalizeEmail(registerInput.email),
+    tenantId,
+    email: normalizedEmail,
     firstName: registerInput.firstName.trim(),
     lastName: registerInput.lastName.trim(),
     passwordHash,
   });
 
-  const userRoleId = await getRoleIdByName("user");
+  const userRoleId = await getRoleIdByName(roleName);
   await assignRoleToUser({
     userId,
     roleId: userRoleId,
@@ -123,8 +150,10 @@ export async function register(registerInput: RegisterInput): Promise<AuthRespon
 }
 
 export async function login(loginInput: LoginInput): Promise<AuthResponse> {
+  const normalizedTenantSlug = normalizeTenantSlug(loginInput.tenantSlug);
+
   const user = await findUserByTenantAndEmail({
-    tenantSlug: loginInput.tenantSlug,
+    tenantSlug: normalizedTenantSlug,
     email: normalizeEmail(loginInput.email),
   });
 
