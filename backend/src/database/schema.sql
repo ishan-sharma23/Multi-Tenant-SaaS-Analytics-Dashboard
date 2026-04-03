@@ -72,6 +72,26 @@ CREATE TABLE IF NOT EXISTS user_roles (
     ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT UNSIGNED NOT NULL,
+  token_id CHAR(36) NOT NULL,
+  token_hash CHAR(64) NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  revoked_at TIMESTAMP NULL DEFAULT NULL,
+  replaced_by_token_id CHAR(36) NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_refresh_tokens_token_id (token_id),
+  UNIQUE KEY uq_refresh_tokens_token_hash (token_hash),
+  KEY idx_refresh_tokens_user_id (user_id),
+  KEY idx_refresh_tokens_expires_at (expires_at),
+  KEY idx_refresh_tokens_revoked_at (revoked_at),
+  CONSTRAINT fk_refresh_tokens_user_id
+    FOREIGN KEY (user_id) REFERENCES users(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
 CREATE TABLE IF NOT EXISTS metrics (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   tenant_id BIGINT UNSIGNED NOT NULL,

@@ -76,6 +76,7 @@ async function truncateAllTables(): Promise<void> {
     await connection.query("TRUNCATE TABLE events");
     await connection.query("TRUNCATE TABLE metrics");
     await connection.query("TRUNCATE TABLE user_roles");
+    await connection.query("TRUNCATE TABLE refresh_tokens");
     await connection.query("TRUNCATE TABLE users");
     await connection.query("TRUNCATE TABLE roles");
     await connection.query("TRUNCATE TABLE tenants");

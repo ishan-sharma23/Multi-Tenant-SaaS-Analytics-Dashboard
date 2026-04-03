@@ -23,9 +23,12 @@ export function signAccessToken(payload: Omit<AuthTokenPayload, "tokenType">): s
   );
 }
 
-export function signRefreshToken(payload: Omit<AuthTokenPayload, "tokenType">): string {
+export function signRefreshToken(
+  payload: Omit<AuthTokenPayload, "tokenType" | "tokenId">,
+  tokenId: string
+): string {
   return signToken(
-    { ...payload, tokenType: "refresh" },
+    { ...payload, tokenType: "refresh", tokenId },
     env.JWT_REFRESH_SECRET,
     env.JWT_REFRESH_EXPIRES_IN as SignOptions["expiresIn"]
   );
@@ -45,7 +48,8 @@ function verifyToken(token: string, secret: string): AuthTokenPayload {
     typeof payload.tenantId !== "number" ||
     typeof payload.email !== "string" ||
     !Array.isArray(payload.roles) ||
-    (payload.tokenType !== "access" && payload.tokenType !== "refresh")
+    (payload.tokenType !== "access" && payload.tokenType !== "refresh") ||
+    (payload.tokenType === "refresh" && typeof payload.tokenId !== "string")
   ) {
     throw new Error("Malformed token payload");
   }
@@ -56,6 +60,7 @@ function verifyToken(token: string, secret: string): AuthTokenPayload {
     email: payload.email,
     roles: payload.roles,
     tokenType: payload.tokenType,
+    tokenId: payload.tokenId,
   };
 }
 
@@ -77,4 +82,20 @@ export function verifyRefreshToken(token: string): AuthTokenPayload {
   }
 
   return payload;
+}
+
+export function getTokenExpirationDate(token: string): Date {
+  const decoded = jwt.decode(token);
+
+  if (!decoded || typeof decoded === "string") {
+    throw new Error("Invalid token payload");
+  }
+
+  const payload = decoded as JwtPayload;
+
+  if (typeof payload.exp !== "number") {
+    throw new Error("Token expiration missing");
+  }
+
+  return new Date(payload.exp * 1000);
 }

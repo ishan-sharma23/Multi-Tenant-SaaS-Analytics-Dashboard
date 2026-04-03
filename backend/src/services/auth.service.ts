@@ -6,10 +6,22 @@ import {
   findUserByTenantAndEmail,
   getRoleIdByName,
 } from "../models/auth.model";
+import {
+  createRefreshTokenRecord,
+  findUsableRefreshTokenByHash,
+  revokeRefreshTokenByHash,
+} from "../models/refresh-token.model";
 import { LoginInput, AuthResponse, RegisterInput } from "../types/auth";
-import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../utils/jwt";
+import {
+  getTokenExpirationDate,
+  signAccessToken,
+  signRefreshToken,
+  verifyRefreshToken,
+} from "../utils/jwt";
 import { comparePassword, hashPassword } from "../utils/password";
 import { AppError } from "../utils/app-error";
+import { hashToken } from "../utils/token";
+import crypto from "crypto";
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
@@ -33,12 +45,12 @@ function sanitizeUser(user: {
   };
 }
 
-function issueTokens(user: {
+async function issueTokens(user: {
   id: number;
   tenantId: number;
   email: string;
   roles: ("admin" | "user")[];
-}) {
+}): Promise<AuthResponse["tokens"]> {
   const tokenPayload = {
     userId: user.id,
     tenantId: user.tenantId,
@@ -46,9 +58,22 @@ function issueTokens(user: {
     roles: user.roles,
   };
 
+  const refreshTokenId = crypto.randomUUID();
+  const accessToken = signAccessToken(tokenPayload);
+  const refreshToken = signRefreshToken(tokenPayload, refreshTokenId);
+  const refreshTokenHash = hashToken(refreshToken);
+  const refreshTokenExpiresAt = getTokenExpirationDate(refreshToken);
+
+  await createRefreshTokenRecord({
+    userId: user.id,
+    tokenId: refreshTokenId,
+    tokenHash: refreshTokenHash,
+    expiresAt: refreshTokenExpiresAt,
+  });
+
   return {
-    accessToken: signAccessToken(tokenPayload),
-    refreshToken: signRefreshToken(tokenPayload),
+    accessToken,
+    refreshToken,
   };
 }
 
@@ -93,7 +118,7 @@ export async function register(registerInput: RegisterInput): Promise<AuthRespon
 
   return {
     user: sanitizeUser(createdUser),
-    tokens: issueTokens(createdUser),
+    tokens: await issueTokens(createdUser),
   };
 }
 
@@ -119,12 +144,19 @@ export async function login(loginInput: LoginInput): Promise<AuthResponse> {
 
   return {
     user: sanitizeUser(user),
-    tokens: issueTokens(user),
+    tokens: await issueTokens(user),
   };
 }
 
 export async function refresh(refreshToken: string): Promise<AuthResponse["tokens"]> {
   const payload = verifyRefreshToken(refreshToken);
+  const currentRefreshTokenHash = hashToken(refreshToken);
+
+  const usableToken = await findUsableRefreshTokenByHash(currentRefreshTokenHash);
+
+  if (!usableToken || usableToken.user_id !== payload.userId) {
+    throw new AppError("Refresh token is invalid or expired", 401);
+  }
 
   const user = await findUserById(payload.userId);
 
@@ -132,5 +164,22 @@ export async function refresh(refreshToken: string): Promise<AuthResponse["token
     throw new AppError("User not found or inactive", 401);
   }
 
-  return issueTokens(user);
+  const nextTokens = await issueTokens(user);
+
+  await revokeRefreshTokenByHash({
+    tokenHash: currentRefreshTokenHash,
+    replacedByTokenId: verifyRefreshToken(nextTokens.refreshToken).tokenId,
+  });
+
+  return nextTokens;
+}
+
+export async function logout(refreshToken?: string): Promise<void> {
+  if (!refreshToken) {
+    return;
+  }
+
+  await revokeRefreshTokenByHash({
+    tokenHash: hashToken(refreshToken),
+  });
 }

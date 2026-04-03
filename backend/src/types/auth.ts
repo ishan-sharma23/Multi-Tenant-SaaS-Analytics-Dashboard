@@ -6,6 +6,7 @@ export interface AuthTokenPayload {
   email: string;
   roles: RoleName[];
   tokenType: "access" | "refresh";
+  tokenId?: string;
 }
 
 export interface AuthUser {

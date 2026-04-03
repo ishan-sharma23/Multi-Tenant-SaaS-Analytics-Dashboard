@@ -104,6 +104,10 @@ export async function refresh(req: Request, res: Response, next: NextFunction): 
 
 export async function logout(_req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    const body = refreshSchema.parse(_req.body ?? {});
+    const refreshToken = body.refreshToken || _req.cookies?.refreshToken;
+
+    await authService.logout(refreshToken);
     clearRefreshCookie(res);
     sendSuccess(res, 200, null, "Logged out successfully");
   } catch (error) {

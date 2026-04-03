@@ -1,17 +1,21 @@
 import request from "supertest";
 import app from "../src/app";
 import * as authModel from "../src/models/auth.model";
+import * as refreshTokenModel from "../src/models/refresh-token.model";
 import * as passwordUtils from "../src/utils/password";
 
 jest.mock("../src/models/auth.model");
+jest.mock("../src/models/refresh-token.model");
 jest.mock("../src/utils/password");
 
 describe("Auth API", () => {
   const mockedAuthModel = jest.mocked(authModel);
+  const mockedRefreshTokenModel = jest.mocked(refreshTokenModel);
   const mockedPasswordUtils = jest.mocked(passwordUtils);
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockedRefreshTokenModel.createRefreshTokenRecord.mockResolvedValue();
   });
 
   describe("POST /api/auth/register", () => {
