@@ -15,6 +15,9 @@ import adminRouter from "./routes/admin.routes";
 
 const app = express();
 
+// App runs behind nginx in docker, so trust one proxy hop for correct client IP handling.
+app.set("trust proxy", 1);
+
 app.use(helmet());
 app.use(
   cors({
