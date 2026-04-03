@@ -1,0 +1,109 @@
+# Multi-Tenant SaaS Analytics Dashboard
+
+Production-ready full-stack SaaS analytics dashboard with multi-tenant auth, role-based access control, KPI/charts/activity analytics, and Dockerized local deployment.
+
+## Stack
+
+- Backend: Node.js, Express, TypeScript, MySQL, JWT, Swagger
+- Frontend: React, TypeScript, Vite, Tailwind CSS, Zustand, TanStack Query, Recharts
+- Infra: Docker, docker-compose
+
+## Project Structure
+
+- backend: API server, schema, seed script, tests
+- frontend: React SPA with auth, dashboard, admin
+- docker-compose.yml: mysql + backend + frontend
+- .env.example: required environment variables
+
+## Backend Highlights
+
+- Auth routes:
+  - POST /api/auth/register
+  - POST /api/auth/login
+  - POST /api/auth/refresh
+- User routes:
+  - GET /api/users/me
+  - PUT /api/users/me
+  - DELETE /api/users/me
+- Dashboard routes:
+  - GET /api/dashboard/metrics
+  - GET /api/dashboard/charts
+  - GET /api/dashboard/activity
+- Admin routes:
+  - GET /api/admin/users
+  - PUT /api/admin/users/:id/role
+  - DELETE /api/admin/users/:id
+- Swagger docs: /api/docs
+- Security/performance: helmet, cors, rate limiting, mysql2 pool
+- Auth model: access token (15m) + refresh token (7d, httpOnly cookie)
+
+## Frontend Highlights
+
+- Pages: /login, /register, /dashboard, /admin, 404
+- Form validation: React Hook Form + Zod
+- State:
+  - Zustand for auth session in memory
+  - TanStack Query for server state
+- Charts: line, bar, and pie via Recharts
+- Activity feed: filtering, pagination, virtualization when rows > 100
+- Performance: route-level code splitting with React.lazy + Suspense
+
+## Local Development (Without Docker)
+
+### 1. Backend
+
+1. cd backend
+2. npm install
+3. Copy values from ../.env.example into backend/.env and adjust for your local MySQL
+4. Run schema from backend/src/database/schema.sql on MySQL
+5. npm run seed
+6. npm run dev
+
+### 2. Frontend
+
+1. cd frontend
+2. npm install
+3. Create frontend/.env with:
+   - VITE_API_BASE_URL=http://localhost:4000/api
+4. npm run dev
+
+## Docker Development
+
+1. From project root run:
+   - docker compose up --build
+2. Services:
+   - Frontend: http://localhost:5173
+   - Backend: http://localhost:4000
+   - Swagger: http://localhost:4000/api/docs
+
+## Testing
+
+Backend tests include required scenarios and mock DB-facing model modules:
+
+- POST /api/auth/register
+  - success
+  - validation errors
+- POST /api/auth/login
+  - success
+  - wrong password
+- GET /api/dashboard/metrics
+  - authenticated
+  - unauthenticated
+
+Run tests:
+
+1. cd backend
+2. npm test
+
+## Seeded Demo Credentials
+
+- Tenant slug: acme-growth
+- Admin email: admin@acme-growth.com
+- Password: password
+
+## Notes
+
+- API response shape is consistent:
+  - { success: boolean, data?: any, error?: string, message?: string }
+- Raw SQL is used throughout (no ORM)
+- TypeScript strict mode is enabled on backend and frontend
