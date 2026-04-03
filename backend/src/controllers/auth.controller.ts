@@ -32,6 +32,15 @@ function setRefreshCookie(res: Response, refreshToken: string): void {
   });
 }
 
+function clearRefreshCookie(res: Response): void {
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: env.COOKIE_SECURE,
+    sameSite: "lax",
+    path: "/api/auth/refresh",
+  });
+}
+
 export async function register(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const payload = registerSchema.parse(req.body);
@@ -88,6 +97,15 @@ export async function refresh(req: Request, res: Response, next: NextFunction): 
       },
       "Access token refreshed"
     );
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function logout(_req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    clearRefreshCookie(res);
+    sendSuccess(res, 200, null, "Logged out successfully");
   } catch (error) {
     next(error);
   }

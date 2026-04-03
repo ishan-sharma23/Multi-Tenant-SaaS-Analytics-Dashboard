@@ -1,10 +1,20 @@
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/auth.store";
+import { logout } from "../api/auth";
 
 export default function AppShell(): JSX.Element {
   const user = useAuthStore((state) => state.user);
   const clearSession = useAuthStore((state) => state.clearSession);
   const navigate = useNavigate();
+
+  async function handleLogout(): Promise<void> {
+    try {
+      await logout();
+    } finally {
+      clearSession();
+      navigate("/login");
+    }
+  }
 
   return (
     <div className="min-h-screen px-4 py-6 sm:px-8">
@@ -38,10 +48,7 @@ export default function AppShell(): JSX.Element {
           )}
           <button
             type="button"
-            onClick={() => {
-              clearSession();
-              navigate("/login");
-            }}
+            onClick={handleLogout}
             className="rounded-full bg-ink px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
           >
             Log out

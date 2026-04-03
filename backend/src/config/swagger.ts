@@ -121,6 +121,15 @@ const swaggerSpec = swaggerJSDoc({
           },
         },
       },
+      "/api/auth/logout": {
+        post: {
+          tags: ["Auth"],
+          summary: "Log out the current session",
+          responses: {
+            "200": { description: "Logged out" },
+          },
+        },
+      },
       "/api/users/me": {
         get: {
           tags: ["Users"],
