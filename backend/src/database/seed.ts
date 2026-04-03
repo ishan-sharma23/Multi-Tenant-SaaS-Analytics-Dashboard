@@ -1,7 +1,8 @@
 import { ResultSetHeader } from "mysql2";
 import { getConnection, closeDatabasePool } from "../config/database";
+import { hashPassword } from "../utils/password";
 
-const DEFAULT_PASSWORD_HASH = "$2b$10$N9qo8uLOickgx2ZMRZo5i.ejQ6dogJjM90oCbGyF/F7kh/3GzdhGa";
+const DEFAULT_SEEDED_PASSWORD = "password";
 
 type TenantSeed = {
   name: string;
@@ -88,6 +89,7 @@ async function truncateAllTables(): Promise<void> {
 
 async function seed(): Promise<void> {
   await truncateAllTables();
+  const defaultPasswordHash = await hashPassword(DEFAULT_SEEDED_PASSWORD);
 
   const connection = await getConnection();
 
@@ -122,7 +124,7 @@ async function seed(): Promise<void> {
           `admin@${tenant.slug}.com`,
           "Admin",
           tenant.name.split(" ")[0],
-          DEFAULT_PASSWORD_HASH,
+          defaultPasswordHash,
           tenant.plan === "starter" ? "free" : tenant.plan,
           true,
           new Date(),
@@ -153,7 +155,7 @@ async function seed(): Promise<void> {
             `${firstName.toLowerCase()}.${lastName.toLowerCase()}${i}@${tenant.slug}.com`,
             firstName,
             lastName,
-            DEFAULT_PASSWORD_HASH,
+            defaultPasswordHash,
             pick(USER_PLANS),
             true,
             new Date(Date.now() - randomInt(1, 10) * 24 * 60 * 60 * 1000),
@@ -243,7 +245,7 @@ async function seed(): Promise<void> {
     await connection.commit();
 
     console.log("Seed completed successfully.");
-    console.log("Default seeded password for all users: password");
+    console.log(`Default seeded password for all users: ${DEFAULT_SEEDED_PASSWORD}`);
   } catch (error) {
     await connection.rollback();
     throw error;
