@@ -4,6 +4,9 @@ node_modules/
 # Build output
 backend/dist/
 frontend/dist/
+frontend/*.tsbuildinfo
+frontend/vite.config.js
+frontend/vite.config.d.ts
 
 # Local env files
 .env
