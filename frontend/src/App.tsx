@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { Navigate, RouterProvider, createBrowserRouter } from "react-router-dom";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AppShell from "./components/AppShell";
+import AuthBootstrap from "./components/AuthBootstrap";
 
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const RegisterPage = lazy(() => import("./pages/RegisterPage"));
@@ -58,5 +59,9 @@ const router = createBrowserRouter([
 ]);
 
 export default function App(): JSX.Element {
-  return <RouterProvider router={router} />;
+  return (
+    <AuthBootstrap>
+      <RouterProvider router={router} />
+    </AuthBootstrap>
+  );
 }

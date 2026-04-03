@@ -38,7 +38,11 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    if (originalRequest.url?.includes("/auth/login") || originalRequest.url?.includes("/auth/register")) {
+    if (
+      originalRequest.url?.includes("/auth/login") ||
+      originalRequest.url?.includes("/auth/register") ||
+      originalRequest.url?.includes("/auth/refresh")
+    ) {
       return Promise.reject(error);
     }
 
