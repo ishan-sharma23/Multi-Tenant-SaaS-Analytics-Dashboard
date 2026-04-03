@@ -115,4 +115,24 @@ describe("Auth API", () => {
       expect(response.body.error).toBe("Invalid credentials");
     });
   });
+
+  describe("POST /api/auth/logout", () => {
+    it("should clear auth cookie and return success", async () => {
+      const response = await request(app).post("/api/auth/logout").send({});
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.message).toBe("Logged out successfully");
+
+      const setCookieHeader = response.headers["set-cookie"];
+      const cookieValues = Array.isArray(setCookieHeader)
+        ? setCookieHeader
+        : typeof setCookieHeader === "string"
+          ? [setCookieHeader]
+          : [];
+
+      expect(cookieValues.length).toBeGreaterThan(0);
+      expect(cookieValues.join(";")).toContain("refreshToken=");
+    });
+  });
 });
